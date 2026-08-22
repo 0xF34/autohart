@@ -1,8 +1,8 @@
-const crypto = require('crypto')
+import crypto from 'crypto'
 
 const KEY = process.env.ENCRYPTION_KEY || 'autohar-key'
 
-function generateToken(length = 20) {
+export function generateToken(length: number = 20): string {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*'
   let token = ''
   for (let i = 0; i < length; i++) {
@@ -11,7 +11,7 @@ function generateToken(length = 20) {
   return token
 }
 
-function encrypt(text) {
+export function encrypt(text: string): string {
   const iv = crypto.randomBytes(16)
   const cipher = crypto.createCipheriv('aes-256-cbc', Buffer.from(KEY.padEnd(32).slice(0, 32)), iv)
   let encrypted = cipher.update(text, 'utf8', 'hex')
@@ -19,7 +19,7 @@ function encrypt(text) {
   return iv.toString('hex') + ':' + encrypted
 }
 
-function decrypt(text) {
+export function decrypt(text: string): string {
   try {
     const parts = text.split(':')
     const iv = Buffer.from(parts[0], 'hex')
@@ -31,5 +31,3 @@ function decrypt(text) {
     return ''
   }
 }
-
-module.exports = { generateToken, encrypt, decrypt }
