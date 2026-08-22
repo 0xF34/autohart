@@ -1,16 +1,19 @@
 import { decrypt } from './crypto'
-import { NextRequest } from 'next/server'
 
 interface SessionData {
   directory: string
   token: string
 }
 
-export function getSession(req: NextRequest): SessionData | null {
-  const cookie = req.cookies.get('rc_session')
+export function getSession(req: Request): SessionData | null {
+  const cookieHeader = req.headers.get('cookie') || ''
+  const sessionMatch = cookieHeader.match(/rc_session=([^;]+)/)
+  if (!sessionMatch) return null
+  
+  const cookie = decodeURIComponent(sessionMatch[1])
   if (!cookie) return null
   
-  const decrypted = decrypt(cookie.value)
+  const decrypted = decrypt(cookie)
   if (!decrypted) return null
   
   try {
