@@ -1,14 +1,15 @@
 import './globals.css'
+import type { Metadata } from 'next'
 
-export const metadata = {
-  title: 'AutoHar',
-  description: 'Roblox tools'
+export const metadata: Metadata = {
+  title: 'AutoHar - Roblox Extension Platform',
+  description: 'Build, manage, and deploy Roblox extensions with ease',
 }
 
-export default function RootLayout({ children }) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className="min-h-screen">
-      <body className="bg-bg text-white min-h-screen flex flex-col">
+    <html lang="en" className="dark">
+      <body className="bg-[#09090b] text-white antialiased">
         {children}
       </body>
     </html>
