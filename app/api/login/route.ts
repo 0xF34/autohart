@@ -1,16 +1,16 @@
 import { NextResponse } from 'next/server'
 import { encrypt } from '@/lib/crypto'
-import { users } from '../create/route'
+import { users } from '@/lib/store'
 
-export async function POST(req) {
-  const { token } = await req.json()
+export async function POST(req: Request) {
+  const { token } = await req.json() as { token?: string }
 
   if (!token) {
     return NextResponse.json({ success: false, message: 'Token required' }, { status: 400 })
   }
 
-  let found = null
-  for (const [dir, user] of users) {
+  let found: any = null
+  for (const [, user] of users) {
     if (user.token === token) {
       found = user
       break
