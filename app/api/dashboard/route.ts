@@ -1,14 +1,15 @@
 import { NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth'
-import { users } from '../create/route'
+import { users } from '@/lib/store'
 
-export async function GET(req) {
-  const action = req.nextUrl.searchParams.get('action')
+export async function GET(req: Request) {
+  const url = new URL(req.url)
+  const action = url.searchParams.get('action')
 
   if (action === 'leaderboard') {
     const all = Array.from(users.values())
-    const sorted = all.sort((a, b) => b.hits - a.hits || b.rap - a.rap)
-    const leaderboard = sorted.map((u, i) => ({
+    const sorted = all.sort((a: any, b: any) => b.hits - a.hits || b.rap - a.rap)
+    const leaderboard = sorted.map((u: any, i: number) => ({
       directory: u.directory,
       displayName: u.displayName,
       hits: u.hits,
@@ -21,8 +22,8 @@ export async function GET(req) {
       leaderboard,
       stats: {
         totalUsers: all.length,
-        totalHits: all.reduce((s, u) => s + u.hits, 0),
-        totalRap: all.reduce((s, u) => s + u.rap, 0)
+        totalHits: all.reduce((s: number, u: any) => s + u.hits, 0),
+        totalRap: all.reduce((s: number, u: any) => s + u.rap, 0)
       }
     })
   }
@@ -36,14 +37,14 @@ export async function GET(req) {
   return NextResponse.json({
     success: true,
     stats: {
-      hits: user.hits,
-      rap: user.rap,
-      cookies: user.cookies.length
+      hits: (user as any).hits,
+      rap: (user as any).rap,
+      cookies: (user as any).cookies.length
     }
   })
 }
 
-function getLevel(hits) {
+function getLevel(hits: number): string {
   if (hits >= 1000) return 'Legend'
   if (hits >= 500) return 'Diamond'
   if (hits >= 100) return 'Platinum'
